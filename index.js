@@ -1,21 +1,47 @@
-import express from 'express';
-import cors from 'cors';
+addEventListener('fetch', event => {
+  event.respondWith(handleRequest(event.request))
+})
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+}
 
-app.use(cors());
-app.use(express.json());
+async function handleRequest(request) {
+  const url = new URL(request.url)
 
-app.get('/', (req, res) => {
-  res.send('🔥 Hello from Render backend!');
-});
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { headers: CORS_HEADERS })
+  }
 
-app.post('/api/reviews', (req, res) => {
-  console.log('Review received:', req.body);
-  res.json({ message: 'Review saved!' });
-});
+  if (url.pathname === '/api/reviews' && request.method === 'POST') {
+    try {
+      const review = await request.json()
+      const key = `review:${Date.now()}`
+      await REVIEWS.put(key, JSON.stringify(review))
+      return new Response(JSON.stringify({ message: 'Review saved!', review }), {
+        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+      })
+    } catch {
+      return new Response('Invalid JSON', {
+        status: 400,
+        headers: CORS_HEADERS,
+      })
+    }
+  }
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+  if (url.pathname === '/api/reviews' && request.method === 'GET') {
+    const reviews = []
+    const list = await REVIEWS.list()
+    for (const { name } of list.keys) {
+      const data = await REVIEWS.get(name)
+      if (data) reviews.push(JSON.parse(data))
+    }
+    return new Response(JSON.stringify(reviews), {
+      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+    })
+  }
+
+  return new Response('Not Found', { status: 404, headers: CORS_HEADERS })
+}

@@ -1,0 +1,7 @@
+name = "cf-backend"
+main = "index.js"
+compatibility_date = "2025-06-30"
+
+kv_namespaces = [
+  { binding = "REVIEWS", id = "65c6219cb2024f74baf6826e012a4a6b" }
+]
